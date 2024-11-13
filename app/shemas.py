@@ -1,3 +1,4 @@
+# app/schemas.py
 from pydantic import BaseModel
 
 class PostBase(BaseModel):
@@ -7,7 +8,7 @@ class PostBase(BaseModel):
 class PostCreate(PostBase):
     pass
 
-class PostShema(PostBase):
+class PostResponse(PostBase):
     id: int
 
     class Config:

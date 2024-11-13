@@ -1,29 +1,31 @@
+from databases import Database
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from .models import Post
 from .shemas import PostCreate
 
 class PostCRUD:
-    def __init__(self, db: Session):
+    def __init__(self, db: Database):
         self.db = db
 
-    def create_post(self, post: PostCreate):
-        db_post = Post(**post.dict())
-        self.db.add(db_post)
-        self.db.commit()
-        self.db.refresh(db_post)
-        return db_post
+    async def create_post(self, post: PostCreate):
+        query = Post.__table__.insert().values(**post.dict())
+        post_id = await self.db.execute(query)
+        return {**post.dict(), "id": post_id}
 
-    def get_post(self, post_id: int):
-        return self.db.query(Post).filter(Post.id == post_id).first()
+    async def get_post(self, post_id: int):
+        query = Post.__table__.select().where(Post.id == post_id)
+        return await self.db.fetch_one(query)
 
-    def get_posts(self, skip: int = 0, limit: int = 10):
-        return self.db.query(Post).offset(skip).limit(limit).all()
+    async def get_posts(self, skip: int = 0, limit: int = 10):
+        query = Post.__table__.select().offset(skip).limit(limit)
+        return await self.db.fetch_all(query)
 
-    def delete_post(self, post_id: int):
-        post = self.get_post(post_id)
+    async def delete_post(self, post_id: int):
+        query = Post.__table__.select().where(Post.id == post_id)
+        post = await self.db.fetch_one(query)
         if post is None:
             raise NoResultFound("Post not found")
-        self.db.delete(post)
-        self.db.commit()
+        delete_query = Post.__table__.delete().where(Post.id == post_id)
+        await self.db.execute(delete_query)
         return post
